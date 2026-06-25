@@ -7,10 +7,8 @@ Run:
 
 import os
 import joblib
-import numpy as np
 import pandas as pd
 import streamlit as st
-
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(HERE, "model.pkl")
@@ -31,24 +29,29 @@ def load_model():
 
 
 def main() -> None:
-    st.title("Loan Eligibility Predictor")
-    st.write(
-        "Enter the applicant's details below and click **Predict** to see whether "
-        "the loan is likely to be approved."
+    # ---------- Title & description ----------
+    st.title("💰 Loan Eligibility Predictor")
+    st.markdown(
+        "A simple machine-learning app that predicts whether a loan application "
+        "is likely to be **approved** or **rejected** based on the applicant's "
+        "profile. Fill in the details below and click **Predict**."
     )
+    st.divider()
 
     model = load_model()
     if model is None:
         st.error(
-            "Model not found. Please run `python loan_prediction.py` first to "
-            "train and save the model."
+            "⚠️ Model not found. Run `python loan_prediction.py` to train and "
+            "save the model first."
         )
         st.stop()
 
+    # ---------- Input fields ----------
+    st.subheader("Applicant Details")
     with st.form("loan_form"):
-        col1, col2 = st.columns(2)
+        c1, c2 = st.columns(2)
 
-        with col1:
+        with c1:
             gender = st.selectbox("Gender", ["Male", "Female"])
             married = st.selectbox("Married", ["Yes", "No"])
             dependents = st.selectbox("Dependents", ["0", "1", "2", "3+"])
@@ -58,7 +61,7 @@ def main() -> None:
                 "Property Area", ["Urban", "Semiurban", "Rural"]
             )
 
-        with col2:
+        with c2:
             applicant_income = st.number_input(
                 "Applicant Income", min_value=0, value=5000, step=100
             )
@@ -72,12 +75,14 @@ def main() -> None:
                 "Loan Amount Term (months)", min_value=0, value=360, step=12
             )
             credit_history = st.selectbox(
-                "Credit History", [1.0, 0.0],
+                "Credit History",
+                [1.0, 0.0],
                 format_func=lambda v: "Good (1)" if v == 1.0 else "Bad (0)",
             )
 
-        submitted = st.form_submit_button("Predict")
+        submitted = st.form_submit_button("🔍 Predict", use_container_width=True)
 
+    # ---------- Output section ----------
     if submitted:
         row = pd.DataFrame(
             [
@@ -98,18 +103,25 @@ def main() -> None:
         )
 
         pred = int(model.predict(row)[0])
-        proba = None
-        if hasattr(model, "predict_proba"):
-            proba = float(model.predict_proba(row)[0][1])
+        proba = (
+            float(model.predict_proba(row)[0][1])
+            if hasattr(model, "predict_proba")
+            else None
+        )
 
+        st.divider()
         st.subheader("Prediction Result")
         if pred == 1:
-            st.success("✅ Loan Approved")
+            st.success("✅ **Loan Approved**")
         else:
-            st.error("❌ Loan Rejected")
+            st.error("❌ **Loan Rejected**")
 
         if proba is not None:
-            st.caption(f"Approval probability: {proba * 100:.1f}%")
+            st.metric("Approval probability", f"{proba * 100:.1f}%")
+            st.progress(min(max(proba, 0.0), 1.0))
+
+        with st.expander("Submitted details"):
+            st.dataframe(row.T.rename(columns={0: "Value"}), use_container_width=True)
 
 
 if __name__ == "__main__":
