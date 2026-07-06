@@ -52,7 +52,7 @@ npm run dev
 
 ## 👩‍💻 Author
 
-**Sonali Rai**
+**Sonali Ray**
 
 GitHub: https://github.com/sonalirai254-lab
 
